@@ -5,13 +5,22 @@ import {
   AIStreamCallbacks,
 } from 'ai'
 import { ChatOpenAI } from 'langchain/chat_models/openai'
-import { AIMessage, HumanMessage, SystemMessage } from 'langchain/schema'
+import { OpenAI } from 'langchain/llms/openai'
+import {
+  AIMessage,
+  BaseMessage,
+  HumanMessage,
+  SystemMessage,
+} from 'langchain/schema'
+import { SqlDatabase } from 'langchain/sql_db'
+import { SqlDatabaseChain } from 'langchain/chains/sql_db'
+import { DataSource } from 'typeorm'
 
 export const runtime = 'edge'
 
 export async function POST(req: Request) {
   const { messages } = (await req.json()) as { messages: Message[] }
-
+  console.log('aaaa')
   const myCallbacks: AIStreamCallbacks = {
     onStart: async () => {},
     onCompletion: async (completion) => {
@@ -32,31 +41,50 @@ export async function POST(req: Request) {
 
   const { stream, handlers } = LangChainStream(myCallbacks)
 
+  const chatHistory: BaseMessage[] = messages.map((message: Message) => {
+    switch (message.role) {
+      case 'user':
+        return new HumanMessage(message.content)
+      case 'system':
+        return new SystemMessage(message.content)
+      default:
+        return new AIMessage(message.content)
+    }
+  })
+
   const Chat = new ChatOpenAI({
     streaming: true,
-    modelName: 'gpt-3.5-turbo-0613',
     verbose: false,
     callbacks: [handlers],
     temperature: 0.9,
     maxTokens: 200,
   })
+  const LLMFunctionTrigger = new ChatOpenAI({
+    modelName: 'gpt-3.5-turbo-0613',
+    temperature: 0,
+  })
 
-  const searchInDB = (query: string) => {
-    console.log(query)
-  }
+  // const db = new DataSource({
+  //   type: 'postgres', // Tipo de base de datos PostgreSQL
+  //   host: 'ep-round-butterfly-330080-pooler.us-east-1.postgres.vercel-storage.com', // Dirección del servidor de la base de datos
+  //   port: 5432, // Puerto de la base de datos de PostgreSQL
+  //   database: 'verceldb', // Nombre de la base de datos a la que te quieres conectar
+  //   username: 'default', // Nombre de usuario de la base de datos
+  //   password: 'TfJ9CinwW0GU', // Contraseña del usuario de la base de datos
+  // })
 
-  //toma como parámetro un array de BaseMessages, a diferencia de .predict que toma solo un input. Sea cual sea el método actualiza el stream
-  const response = Chat.predictMessages(
-    messages.map((message: Message) => {
-      switch (message.role) {
-        case 'user':
-          return new HumanMessage(message.content)
-        case 'system':
-          return new SystemMessage(message.content)
-        default:
-          return new AIMessage(message.content)
-      }
-    }),
+  // const db = await SqlDatabase.fromDataSourceParams({
+  //   appDataSource: datasource,
+  // })
+
+  // const SQLchain = new SqlDatabaseChain({
+  //   llm: new OpenAI({ temperature: 0 }),
+  //   database: db,
+  //   verbose: true,
+  // })
+
+  const response = await LLMFunctionTrigger.invoke(
+    messages[messages.length - 1].content,
     {
       functions: [
         {
@@ -75,9 +103,18 @@ export async function POST(req: Request) {
         },
       ],
     }
-  ).catch(console.error)
+  )
 
-  console.log(response)
+  const functionInfo = response.additional_kwargs.function_call
+  console.log('respuesta del llm:', response)
+  console.log('funciont', functionInfo)
+
+  if (functionInfo) {
+    const res = await SQLchain.run('How many BMW are in mock_data?')
+    console.log(res)
+  }
+  Chat.call(chatHistory, {}).catch(console.error)
+
   //console.log(messages[messages.length - 1].content)
   return new StreamingTextResponse(stream)
 }

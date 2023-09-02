@@ -1,5 +1,3 @@
-import { db } from '@/db/config'
-import { sql } from 'drizzle-orm'
 import { NextResponse, NextRequest } from 'next/server'
 import Papa from 'papaparse'
 
