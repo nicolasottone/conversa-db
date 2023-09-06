@@ -45,7 +45,8 @@ export default function Chat() {
       <form
         className='flex'
         onSubmit={(e) => {
-          handleSubmit(e)
+          //console.log(e.target.elements[0].value)
+          handleSubmit(e, { functions: ['search_db'] })
         }}
       >
         <input

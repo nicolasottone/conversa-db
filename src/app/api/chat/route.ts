@@ -10,7 +10,9 @@ import { AIMessage, HumanMessage, SystemMessage } from 'langchain/schema'
 export const runtime = 'edge'
 
 export async function POST(req: Request) {
-  const { messages } = (await req.json()) as { messages: Message[] }
+  const response = await req.json()
+  const { messages } = response as { messages: Message[] }
+  console.log(response)
 
   const myCallbacks: AIStreamCallbacks = {
     onStart: async () => {},
@@ -34,19 +36,14 @@ export async function POST(req: Request) {
 
   const Chat = new ChatOpenAI({
     streaming: true,
-    modelName: 'gpt-3.5-turbo-0613',
     verbose: false,
     callbacks: [handlers],
     temperature: 0.9,
     maxTokens: 200,
   })
 
-  const searchInDB = (query: string) => {
-    console.log(query)
-  }
-
   //toma como parámetro un array de BaseMessages, a diferencia de .predict que toma solo un input. Sea cual sea el método actualiza el stream
-  const response = Chat.predictMessages(
+  Chat.call(
     messages.map((message: Message) => {
       switch (message.role) {
         case 'user':
@@ -57,27 +54,8 @@ export async function POST(req: Request) {
           return new AIMessage(message.content)
       }
     }),
-    {
-      functions: [
-        {
-          name: 'searchInDB',
-          description: 'Make the search in the database',
-          parameters: {
-            type: 'object',
-            properties: {
-              query: {
-                type: 'string',
-                description: "Summary of the user's query",
-              },
-            },
-            required: ['query'],
-          },
-        },
-      ],
-    }
+    {}
   ).catch(console.error)
 
-  console.log(response)
-  //console.log(messages[messages.length - 1].content)
   return new StreamingTextResponse(stream)
 }

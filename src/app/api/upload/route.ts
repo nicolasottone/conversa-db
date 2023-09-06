@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     })
 
     //DB QUERY
-    /* const results = await db.execute(sql`select * from mock_data limit 10`)
-    console.log(results.rows) */
+    const results = await db.execute(sql`select * from mock_data limit 10`)
+    console.log(results.rows)
 
     return NextResponse.json(parsedData)
   } catch (error) {
