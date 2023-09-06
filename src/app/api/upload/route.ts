@@ -1,5 +1,4 @@
-import { db } from '@/db/config'
-import { sql } from 'drizzle-orm'
+
 import { NextResponse, NextRequest } from 'next/server'
 import Papa from 'papaparse'
 
@@ -26,10 +25,6 @@ export async function POST(request: NextRequest) {
         },
       })
     })
-
-    //DB QUERY
-    const results = await db.execute(sql`select * from mock_data limit 10`)
-    console.log(results.rows)
 
     return NextResponse.json(parsedData)
   } catch (error) {

@@ -12,7 +12,6 @@ export const runtime = 'edge'
 export async function POST(req: Request) {
   const response = await req.json()
   const { messages } = response as { messages: Message[] }
-  console.log(response)
 
   const myCallbacks: AIStreamCallbacks = {
     onStart: async () => {},

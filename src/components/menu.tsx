@@ -15,13 +15,6 @@ import { Button } from './ui/button'
 
 interface MenuProps {}
 
-/* const fetchAPI = async () => {
-  const response = await fetch('/api/search', {
-    method: 'POST',
-    body: 'Este es el body',
-  })
-}
- */
 const Menu: FC<MenuProps> = () => {
   //const chatbotSetup = await setupMessage()
   return (
@@ -31,7 +24,6 @@ const Menu: FC<MenuProps> = () => {
       </SheetTrigger>
       <SheetContent className='min-w-[480] h-screen w-full flex flex-col'>
         <FileForm />
-        <Button>Click aca para buscar</Button>
         <Chat />
       </SheetContent>
     </Sheet>
