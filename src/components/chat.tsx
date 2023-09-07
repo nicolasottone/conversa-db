@@ -12,10 +12,16 @@ interface ChatProps {
 export default function Chat() {
   const { history, setHistory } = useMessagesStore()
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
-    useChat({
-      initialMessages: history,
-    })
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    setMessages,
+  } = useChat({
+    initialMessages: history,
+  })
 
   useEffect(() => {
     //working only if the response is complete
@@ -23,15 +29,30 @@ export default function Chat() {
   }, [isLoading])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    //Hacer edge el trigger
     e.preventDefault()
-    debugger
-    const response = await fetch('/api/search', {
+
+    const triggerResponse = await fetch('/api/search_trigger', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: e.target.elements[0].value }),
+      body: JSON.stringify({ prompt: input }),
     })
-    console.log(await response.json())
+    // const { trigger } = await triggerResponse.json()
+    // console.log(trigger)
+    // if (trigger) {
+    //   const data = await fetch('/api/search', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ query: trigger }),
+    //   })
+    // }
+    // const data = await fetch('/api/search', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ query: "hola" }),
+    // })
+
+    // const info = await data.json()
+    // console.log(info)
 
     handleSubmit(e, { functions: ['search_db'] })
   }

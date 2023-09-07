@@ -1,40 +1,23 @@
-import { ChatOpenAI } from 'langchain/chat_models/openai'
 import { NextResponse, NextRequest } from 'next/server'
 import { sql } from 'drizzle-orm'
 import { db } from '@/db/config'
 
 export async function POST(req: NextRequest) {
-  const { prompt } = await req.json()
+  const { query } = await req.json()
+  console.log('pase por aca')
 
-  const LLMFunctionTrigger = new ChatOpenAI({
-    modelName: 'gpt-3.5-turbo-0613',
-    temperature: 0,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-  })
-
-  const response = await LLMFunctionTrigger.invoke(prompt, {
-    functions: [
-      {
-        name: 'searchInDB',
-        description: 'Make the search in the database',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: {
-              type: 'string',
-              description: "Summary of the user's query",
-            },
-          },
-          required: ['query'],
-        },
-      },
-    ],
-  })
-
-  console.log(response)
   //DB QUERY
-  // const results = await db.execute(sql`select * from mock_data limit 3`)
+  // const results = await db.execute(
+  //   sql`SELECT
+  //   column_name,
+  //   data_type,
+  //   is_nullable,
+  //   character_maximum_length,
+  //   numeric_precision_radix 
+  //   FROM information_schema.columns WHERE table_name = 'mock_data';
+  // `
+  // )
   // console.log(results.rows)
 
-  return NextResponse.json(response)
+  return NextResponse.json({ response: 'resultado de la db' })
 }
