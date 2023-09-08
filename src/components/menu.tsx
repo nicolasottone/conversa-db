@@ -7,11 +7,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import FileForm from './file-form'
 import { cn } from '@/lib/utils'
 import { BsChatDots } from 'react-icons/bs'
 import Chat from './chat'
-import { Button } from './ui/button'
 
 interface MenuProps {}
 
@@ -22,8 +20,11 @@ const Menu: FC<MenuProps> = () => {
       <SheetTrigger className={cn('fixed right-10 bottom-5')}>
         <BsChatDots className='text-4xl' />
       </SheetTrigger>
-      <SheetContent className='min-w-[480] h-screen w-full flex flex-col'>
-        <FileForm />
+      <SheetContent
+        botName='AI Assistant'
+        botInitials='AI'
+        className='min-w-[480] h-screen w-full flex flex-col p-0'
+      >
         <Chat />
       </SheetContent>
     </Sheet>

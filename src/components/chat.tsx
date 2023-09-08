@@ -31,11 +31,11 @@ export default function Chat() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const triggerResponse = await fetch('/api/search_trigger', {
+    /*     const triggerResponse = await fetch('/api/search_trigger', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: input }),
-    })
+    }) */
     // const { trigger } = await triggerResponse.json()
     // console.log(trigger)
     // if (trigger) {
@@ -58,24 +58,25 @@ export default function Chat() {
   }
 
   return (
-    <div className='h-full w-full flex flex-col justify-between overflow-auto'>
-      <div className='h-full flex flex-col stretch overflow-y-auto'>
-        {messages.length > 0 &&
-          messages.map((message) => {
-            if (message.role === 'user') {
-              return (
-                <p key={message.id} className='whitespace-pre-wrap'>
-                  User: {message.content}
-                </p>
-              )
-            } else if (message.role === 'assistant') {
-              return (
-                <p key={message.id} className='whitespace-pre-wrap'>
-                  AI: {message.content}
-                </p>
-              )
-            }
-          })}
+    <div className='h-full w-full p-6 pt-2 flex flex-col justify-between overflow-auto'>
+      <div className='h-full flex flex-col gap-4 stretch overflow-y-auto'>
+        {messages.map((message) =>
+          message.role === 'user' ? (
+            <div
+              className='bg-user-msg w-msg text-white flex self-end p-4 rounded-[20px] rounded-br-[5px]'
+              key={message.id}
+            >
+              <p aria-details='User message'>{message.content}</p>
+            </div>
+          ) : (
+            <div
+              className='bg-ai-msg w-msg flex p-4 rounded-[20px] rounded-bl-[5px]'
+              key={message.id}
+            >
+              <p aria-details='Assistant message'>{message.content}</p>
+            </div>
+          )
+        )}
       </div>
       <form className='flex' onSubmit={onSubmit}>
         <input

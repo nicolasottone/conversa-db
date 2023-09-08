@@ -12,3 +12,4 @@ build
 .contentlayer
 src/app/components/Icons.tsx
 .prisma
+tailwind.config.ts
