@@ -2,8 +2,11 @@ import { ChatOpenAI } from 'langchain/chat_models/openai'
 import { OpenAI } from 'langchain/llms/openai'
 import { NextResponse } from 'next/server'
 import { PromptTemplate } from 'langchain/prompts'
-import { StructuredOutputParser } from 'langchain/output_parsers'
-import { z } from 'zod'
+import {
+  StructuredOutputParser,
+  OutputFixingParser,
+} from 'langchain/output_parsers'
+import { string, z } from 'zod'
 
 export async function POST(req: Request) {
   const { prompt } = await req.json()
@@ -13,7 +16,7 @@ export async function POST(req: Request) {
     temperature: 0.7,
   })
 
-  const response = await LLMFunctionTrigger.invoke(prompt, {
+  const triggerResponse = await LLMFunctionTrigger.invoke(prompt, {
     functions: [
       {
         name: 'makeSearch',
@@ -32,40 +35,42 @@ export async function POST(req: Request) {
     ],
   })
 
-  const { function_call } = response.additional_kwargs
+  const { function_call } = triggerResponse.additional_kwargs
 
-  if (function_call) {
-    const parser = StructuredOutputParser.fromZodSchema(
-      z.object({
-        SQLQuery: z.string().describe('SQL Query to retrieve the data used'),
-        calculationSQLQuery: z
-          .string()
-          .describe('SQL Query to run the calculate'),
-      })
-    )
+  if (!function_call) {
+    return NextResponse.json({
+      trigger: false,
+      querys: false,
+    })
+  }
+  console.log('Genero SQL')
 
-    const formatedInstructions = parser.getFormatInstructions()
+  const parser = StructuredOutputParser.fromZodSchema(
+    z.object({
+      SQLQuery: z.string().describe('SQL Query to retrieve the data used'),
+      calculationSQLQuery: z
+        .string()
+        .describe('SQL Query to run the calculate'),
+    })
+  )
 
-    const SQL_POSTGRES_PROMPT = new PromptTemplate({
-      template: `You are a PostgreSQL expert. Given an input question, first create a syntactically correct SQL query to retrieve the data used for calculations (select all the columns), 
-      and then create a separate SQL query to calculate the specific information the user is requesting. Pay attention to use only the column names available in the tables below. 
-      Be careful not to query for columns that do not exist, and make sure to use the correct table for each column. 
-      If the query does not require any calculations, simply build the SQL query that returns the requested information.
-      If the user does not make a query then do not generate any query.
-      
+  const formatedInstructions = parser.getFormatInstructions()
+
+  const SQL_POSTGRES_PROMPT = new PromptTemplate({
+    template: `You are a PostgreSQL expert. Given an input, first create a syntactically correct SQL query to retrieve the data used for calculations (select all the columns using *), and then create a separate SQL query to calculate the specific information the user is requesting. Pay attention to use only the column names available in the tables below. Be careful not to query for columns that do not exist, and make sure to use the correct table for each column. If the query does not require any calculations, simply build the SQL query that returns the requested information. If the user does not make a query then do not generate any query.
+
       Only use the following table's info:
       Name: mock_data
       Metadata: {table_info}
       
-      Use the following format:
       {format_instructions}
     
-      Question: {input}`,
-      inputVariables: ['table_info', 'input'],
-      partialVariables: { format_instructions: formatedInstructions },
-    })
+      Input: {input}`,
+    inputVariables: ['table_info', 'input'],
+    partialVariables: { format_instructions: formatedInstructions },
+  })
 
-    const metadata = `{
+  const metadata = `{
       column_name: 'id',
       data_type: 'integer',
       is_nullable: 'YES',
@@ -129,19 +134,31 @@ export async function POST(req: Request) {
       numeric_precision_radix: 10
     }`
 
-    const LLMQueryGenerator = new OpenAI({
-      temperature: 0,
-    })
-    const formatedPrompt = await SQL_POSTGRES_PROMPT.format({
-      table_info: metadata,
-      input: function_call.arguments,
-    })
+  const LLMQueryGenerator = new OpenAI({
+    temperature: 0,
+  })
+  const formatedPrompt = await SQL_POSTGRES_PROMPT.format({
+    table_info: metadata,
+    input: function_call.arguments,
+  })
 
-    const response = await LLMQueryGenerator.call(formatedPrompt)
-
-    console.log(await parser.parse(response))
+  type querysType = {
+    SQLQuery?: string
+    calculationSQLQuery?: string
   }
+  let querys: querysType = {}
+
+  const SQLGeneratorResponse = await LLMQueryGenerator.call(formatedPrompt)
+  try {
+    querys = await parser.parse(SQLGeneratorResponse)
+  } catch (e) {
+    console.log('Error al formatear por primera vez')
+    const fixParser = OutputFixingParser.fromLLM(LLMQueryGenerator, parser)
+    querys = await fixParser.parse(SQLGeneratorResponse)
+  }
+  console.log('Desde search trigger:', querys)
   return NextResponse.json({
-    trigger: function_call,
+    trigger: true,
+    querys,
   })
 }

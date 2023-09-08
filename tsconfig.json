@@ -5,7 +5,7 @@
     "skipLibCheck": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "strict": true,
+    "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,

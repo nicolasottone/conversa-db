@@ -4,6 +4,7 @@ import { useChat } from 'ai/react'
 import { useEffect, useState } from 'react'
 import { Message } from 'ai'
 import { useMessagesStore } from '@/store/chatStore'
+import { useDataStore } from '@/store/dataStore'
 
 interface ChatProps {
   setup: Message
@@ -11,7 +12,7 @@ interface ChatProps {
 
 export default function Chat() {
   const { history, setHistory } = useMessagesStore()
-
+  const { setData } = useDataStore()
   const {
     messages,
     input,
@@ -31,28 +32,38 @@ export default function Chat() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    /*     const triggerResponse = await fetch('/api/search_trigger', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: input }),
-    }) */
-    // const { trigger } = await triggerResponse.json()
-    // console.log(trigger)
-    // if (trigger) {
-    //   const data = await fetch('/api/search', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ query: trigger }),
-    //   })
-    // }
-    // const data = await fetch('/api/search', {
+    // const searchTrigger = await fetch('/api/search_trigger', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ query: "hola" }),
+    //   body: JSON.stringify({ prompt: input }),
     // })
 
-    // const info = await data.json()
-    // console.log(info)
+    // //Debug console.log (delete)
+    // if (!searchTrigger.ok) {
+    //   console.log('NO FUE 200, MANEJAR ERRORES')
+    // }
+
+    // const { trigger, querys } = await searchTrigger.json()
+
+    // if (!trigger) {
+    //   handleSubmit(e, { functions: ['chat'] })
+    //   return
+    // }
+
+    const querys = {
+      SQLQuery: "SELECT * FROM mock_data WHERE first_name LIKE 'L%';",
+      calculationSQLQuery:
+        "SELECT COUNT(*) FROM mock_data WHERE first_name LIKE 'L%';",
+    }
+
+    const data = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ querys }),
+    })
+
+    const result = await data.json()
+    setData(result)
 
     handleSubmit(e, { functions: ['search_db'] })
   }

@@ -27,7 +27,7 @@ const FileForm: FC<FileFormProps> = () => {
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string>('')
 
-  const { setData } = useDataStore()
+  const { setData, setDataName } = useDataStore()
   const { setFileFormPopUp } = usePopUpStore()
 
   const onSubmit = async () => {
@@ -41,9 +41,12 @@ const FileForm: FC<FileFormProps> = () => {
       body: fileForm,
     })
 
-    setData(await res.json(), fileName)
+    setData(await res.json())
+    setDataName(fileName)
+    //Reset file state
     setFileName('')
     setFile(null)
+    //Desactivate fileForm popUp
     setFileFormPopUp(false)
   }
 
