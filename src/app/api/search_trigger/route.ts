@@ -59,80 +59,84 @@ export async function POST(req: Request) {
   const SQL_POSTGRES_PROMPT = new PromptTemplate({
     template: `You are a PostgreSQL expert. Given an input, first create a syntactically correct SQL query to retrieve the data used for calculations (select all the columns using *), and then create a separate SQL query to calculate the specific information the user is requesting. Pay attention to use only the column names available in the tables below. Be careful not to query for columns that do not exist, and make sure to use the correct table for each column. If the query does not require any calculations, simply build the SQL query that returns the requested information. If the user does not make a query then do not generate any query.
 
-      Only use the following table's info:
-      Name: mock_data
-      Metadata: {table_info}
+Only use the following table's info:
+Name: mock_data
+Metadata: {table_info}
       
-      {format_instructions}
+{format_instructions}
     
-      Input: {input}`,
+Input: {input}`,
     inputVariables: ['table_info', 'input'],
     partialVariables: { format_instructions: formatedInstructions },
   })
 
-  const metadata = `{
+  const metadataObject = [
+    {
       column_name: 'id',
       data_type: 'integer',
       is_nullable: 'YES',
       character_maximum_length: null,
-      numeric_precision_radix: 2
+      numeric_precision_radix: 2,
     },
     {
       column_name: 'first_name',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'last_name',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'email',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'gender',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'car_brand',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'car_model',
       data_type: 'character varying',
       is_nullable: 'YES',
       character_maximum_length: 255,
-      numeric_precision_radix: null
+      numeric_precision_radix: null,
     },
     {
       column_name: 'car_year',
       data_type: 'integer',
       is_nullable: 'YES',
       character_maximum_length: null,
-      numeric_precision_radix: 2
+      numeric_precision_radix: 2,
     },
     {
       column_name: 'price',
       data_type: 'numeric',
       is_nullable: 'YES',
       character_maximum_length: null,
-      numeric_precision_radix: 10
-    }`
+      numeric_precision_radix: 10,
+    },
+  ]
+
+  const metadata = JSON.stringify(metadataObject)
 
   const LLMQueryGenerator = new OpenAI({
     temperature: 0,
