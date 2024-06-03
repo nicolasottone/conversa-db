@@ -38,7 +38,7 @@ const Hamburger: FC<hamburgerProps> = ({}) => {
             Clear chat historial
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => setData([], 'Ups... please upload your data')}
+            onSelect={() => setData([])}
           >
             Clear data
           </DropdownMenuItem>

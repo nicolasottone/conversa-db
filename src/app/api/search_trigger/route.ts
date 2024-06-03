@@ -9,18 +9,20 @@ import {
 import { string, z } from 'zod'
 
 export async function POST(req: Request) {
-  const { prompt } = await req.json()
+  const { messages } = await req.json()
 
   const LLMFunctionTrigger = new ChatOpenAI({
-    modelName: 'gpt-3.5-turbo-0613',
+    modelName: 'gpt-3.5-turbo-1106',
     temperature: 0.7,
+    maxTokens: 500,
   })
 
-  const triggerResponse = await LLMFunctionTrigger.invoke(prompt, {
+  const triggerResponse = await LLMFunctionTrigger.invoke(messages, {
     functions: [
       {
         name: 'makeSearch',
-        description: 'Activate if the user makes a query',
+        description:
+          'Activate if the user makes a query in the last message, You should not activate if the user wants to DELETE or CREATE',
         parameters: {
           type: 'object',
           properties: {
@@ -43,7 +45,6 @@ export async function POST(req: Request) {
       querys: false,
     })
   }
-  console.log('Genero SQL')
 
   const parser = StructuredOutputParser.fromZodSchema(
     z.object({
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
   const formatedInstructions = parser.getFormatInstructions()
 
   const SQL_POSTGRES_PROMPT = new PromptTemplate({
-    template: `You are a PostgreSQL expert. Given an input, first create a syntactically correct SQL query to retrieve the data used for calculations (select all the columns using *), and then create a separate SQL query to calculate the specific information the user is requesting. Pay attention to use only the column names available in the tables below. Be careful not to query for columns that do not exist, and make sure to use the correct table for each column. If the query does not require any calculations, simply build the SQL query that returns the requested information. If the user does not make a query then do not generate any query.
+    template: `You are a PostgreSQL expert. Given an input, first create a syntactically correct SQL query to retrieve the data used for calculations (select all the columns using *), and then create a separate SQL query to calculate the specific information the user is requesting. Pay attention to use only the column names available in the tables below. All string values are in Title Case, except email column. Be careful not to query for columns that do not exist, and make sure to use the correct table for each column. If the query does not require any calculations, simply build the SQL query that returns the requested information. If the user does not make a query then do not generate any query.
 
 Only use the following table's info:
 Name: mock_data
@@ -135,11 +136,12 @@ Input: {input}`,
       numeric_precision_radix: 10,
     },
   ]
-
   const metadata = JSON.stringify(metadataObject)
 
   const LLMQueryGenerator = new OpenAI({
     temperature: 0,
+    maxTokens: 2000,
+    modelName: 'gpt-3.5-turbo-1106',
   })
   const formatedPrompt = await SQL_POSTGRES_PROMPT.format({
     table_info: metadata,
@@ -153,14 +155,13 @@ Input: {input}`,
   let querys: querysType = {}
 
   const SQLGeneratorResponse = await LLMQueryGenerator.call(formatedPrompt)
+
   try {
     querys = await parser.parse(SQLGeneratorResponse)
   } catch (e) {
-    console.log('Error al formatear por primera vez')
     const fixParser = OutputFixingParser.fromLLM(LLMQueryGenerator, parser)
     querys = await fixParser.parse(SQLGeneratorResponse)
   }
-  console.log('Desde search trigger:', querys)
   return NextResponse.json({
     trigger: true,
     querys,

@@ -1,10 +1,12 @@
 'use client'
 
 import { useChat } from 'ai/react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useMessagesStore } from '@/store/chatStore'
 import { useDataStore } from '@/store/dataStore'
 import { systemMessage } from '@/llm/config'
+import { HumanMessage } from 'langchain/schema'
+import { skip } from 'node:test'
 
 export default function Chat() {
   const { history, setHistory } = useMessagesStore()
@@ -17,6 +19,7 @@ export default function Chat() {
     isLoading,
     setInput,
     append,
+    setMessages,
   } = useChat({
     initialMessages: history,
   })
@@ -29,16 +32,25 @@ export default function Chat() {
   useEffect(() => {
     //working only if the response is complete
     setHistory(messages)
-    console.log(messages)
   }, [isLoading])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setInput(input)
+
+    const formatedMessages = [
+      ...messages.slice(1).map((message) => {
+        return { role: message.role, content: message.content }
+      }),
+      { role: 'user', content: input },
+    ]
+
     const searchTrigger = await fetch('/api/search_trigger', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: input }),
+      body: JSON.stringify({
+        messages: JSON.stringify(formatedMessages),
+      }),
     })
 
     const { trigger, querys } = await searchTrigger.json()
@@ -47,6 +59,8 @@ export default function Chat() {
       handleSubmit(e)
       return
     }
+
+    console.log(querys)
 
     const data = await fetch('/api/search', {
       method: 'POST',

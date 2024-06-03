@@ -26,25 +26,27 @@ export async function POST(req: Request) {
   const { stream, handlers } = LangChainStream(myCallbacks)
 
   const Chat = new ChatOpenAI({
+    modelName: 'gpt-3.5-turbo',
     streaming: true,
     verbose: false,
     callbacks: [handlers],
     temperature: 0.9,
-    maxTokens: 200,
+    maxTokens: 500,
   })
 
   const ResponseChat = new OpenAI({
+    modelName: 'gpt-3.5-turbo',
     streaming: true,
     verbose: false,
     callbacks: [handlers],
     temperature: 0,
-    maxTokens: 200,
+    maxTokens: 500,
   })
 
   if (response.functions) {
-    console.log('Pase por aca')
     const template = new PromptTemplate({
-      template: `You are an NLP database assistant. You have to create a semantic response for the user. You should not include information about the queries made unless the user requests it. If you do not find the result, simply report the state of the table. Round the numbers. Use the next informatión:
+      template: `You are an NLP database assistant. You have to create a semantic response for the user. You should not include information about the queries made unless the user requests it. If you do not find the result, simply report the state of the table. Round the numbers.
+     
 Question: {input}
 
 Querys => Result
@@ -67,10 +69,8 @@ Response:
       calculation_sqlquery: dbQuerys.calculationSQLQuery,
       db_result: JSON.stringify(dbResult),
     })
-    console.log(prompt)
     ResponseChat.call(prompt).catch(console.error)
   } else {
-    console.log('Nono por aca pase')
     //toma como parámetro un array de BaseMessages, a diferencia de .predict que toma solo un input. Sea cual sea el método actualiza el stream
     Chat.call(
       messages.map((message: Message) => {

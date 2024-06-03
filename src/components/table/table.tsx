@@ -119,9 +119,8 @@ export function DataTable<TData>({ data, tableName }: DataTableProps<TData>) {
               }
               onChange={(event) => {
                 table.getColumn('email')?.setFilterValue(event.target.value)
-                console.log(DataFields)
               }}
-              className='max-w-sm'
+              className='max-w-sm ml-3'
             />
           </div>
         ) : (
