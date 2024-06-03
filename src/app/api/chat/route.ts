@@ -25,6 +25,17 @@ export async function POST(req: Request) {
 
   const { stream, handlers } = LangChainStream(myCallbacks)
 
+  const chatHistory: BaseMessage[] = messages.map((message: Message) => {
+    switch (message.role) {
+      case 'user':
+        return new HumanMessage(message.content)
+      case 'system':
+        return new SystemMessage(message.content)
+      default:
+        return new AIMessage(message.content)
+    }
+  })
+
   const Chat = new ChatOpenAI({
     modelName: 'gpt-3.5-turbo',
     streaming: true,
